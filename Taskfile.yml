@@ -1,0 +1,20 @@
+version: "3"
+
+vars:
+  PROJECT_PATH: '{{.PWD}}'
+  # ENV: prod or dev
+  ENV: dev
+
+dotenv: ['{{.PROJECT_PATH}}/config/.{{.ENV}}-env']
+
+tasks:
+    db.start:
+        desc: 'Run dev database'
+        cmds:
+            - docker-compose -f config/docker/docker-compose.yml up
+    db.stop:
+        desc: 'Stop dev database'
+        cmds:
+            - docker-compose -f config/docker/docker-compose.yml down > /dev/null
+
+# requiere: https://taskfile.dev/#/installation
