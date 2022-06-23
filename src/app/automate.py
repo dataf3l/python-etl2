@@ -5,6 +5,7 @@ import sys
 import time
 import platform
 import argparse
+import re
 
 import pandas as pd
 import pyodbc
@@ -16,13 +17,13 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from webdriver_manager.chrome import ChromeDriverManager
 from dotenv import load_dotenv
 from pathlib import Path
+from csv import reader
 
 # set download directory
 DOWNLOAD_DIRECTORY = './downloads'
 
+
 # get_connection_db return a connection pointer to the database and a error string
-
-
 def get_connection_db():
     # detect platform and create connection string
     if platform.system() == 'Windows':
@@ -49,9 +50,10 @@ def get_connection_db():
         connection = pyodbc.connect(cdn)
     except Exception as e:
         return None, str(e)
-    return connection.cursor(), None
+    return connection, None
 
 
+# init_login login to the website
 def init_login(driver):
     # remove_files()
     driver.get("https://prestadores.minsalud.gov.co/habilitacion/work.aspx")
@@ -86,9 +88,8 @@ def init_login(driver):
 
     return driver
 
+
 # get_driver settings and return a driver pointer to the web browser
-
-
 def get_driver():
     try:
         options = webdriver.ChromeOptions()
@@ -107,6 +108,7 @@ def get_driver():
     return browser
 
 
+# download_files download the files from the url
 def download_files(driver):
     # webs have the URL target to download the files
     url_webs = [
@@ -144,7 +146,7 @@ def download_files(driver):
     ]
 
     for web in url_webs:
-        print("> Dowland: ", web["file_name"])
+        print("> Downloading: ", web["file_name"])
         get_csv(driver, web['link'], web['seconds'])
         # wait for the file to be downloaded
         while os.path.exists(DOWNLOAD_DIRECTORY + "/" + web['file_name']) == False:
@@ -153,24 +155,7 @@ def download_files(driver):
         print(">> done...")
 
 
-def main():
-    print("Steep 2: Get DB connection...")
-    connection, err = get_connection_db()
-    if err is not None:
-        print("> Error connecting to database: ", err)
-        sys.exit(1)
-    print("Steep 3: Get driver...")
-    driver = get_driver()
-    print("Steep 4: Login...")
-    driver = init_login(driver)
-    print("Steep 5: Get csv files...")
-    download_files(driver)
-    print("Steep 6: Finish spider job ...")
-    driver.quit()
-    print("Steep 7: Read cvs files...")
-    search_files()
-
-
+# get_csv
 def get_csv(driver, report_url, second):
     URL_REPORT = report_url
     driver.get(URL_REPORT)
@@ -188,20 +173,66 @@ def get_files():
     return glob.glob(DOWNLOAD_DIRECTORY+"/"+"*.csv")
 
 
-def search_files():
+# check_separator_character fix issues with the separator character in the csv files
+# Note: for any reason the separator character is not the same in the csv files
+def check_separator_character(files):
+    # reemplace character (;) for (|) if exists
+    for file in files:
+        print("> Checking separator character: ", file)
+        try:
+            with open(file, encoding='latin-1', mode='r') as f:
+                lines = f.readlines()
+                if lines[0].find(";") != -1:
+                    print(">> Separator character found: ", file)
+                    with open(file, 'w') as f:
+                        for line in lines:
+                            f.write(line.replace(";", "|"))
+                    print(">> Separator character replaced: ", file)
+        except IOError:
+            print("> Error trying to check separator character: ", IOError)
+            return False
+    return True
+
+
+# process_files process the files and save them in the database
+def process_files(connection):
+    # search for the files in the download directory
     files = get_files()
-    print("search_files: ", files)
-
-    if len(files):
+    if check_separator_character(files):
+        print(">> Separator character checked")
+    else:
+        print(">> Separator character failed")
+        sys.exit(1, "Error trying to check separator character")
+    if len(files) > 0:
         for file in files:
-            sep = ';' if file != 'Prestadores.csv' else '|'
-            read_csv(file, sep)
+            read_csv(file, connection)
 
 
-def read_csv(file, sep):
-    data = pd.read_csv(file, sep, encoding="ISO-8859-1",
-                       engine='python', error_bad_lines=False)
-    filename = file.split('.')[0].lower()
+# read_csv read the csv file and insert the data into the database
+def read_csv(file, connection):
+    # count the number of columns is in the first line of the file
+    try:
+        with open(file, encoding="utf-8", mode='r') as f:
+            lines = f.readlines()
+            first_line = lines[0]
+            columns = first_line.split("|")
+    except IOError as e:
+        print("> count the number of columns is in the first line of the file: ", e)
+        sys.exit(1)
+    # read the with pandas and get the DataFrame
+    try:
+        data = pd.read_csv(file, delimiter="|", encoding="utf-8",
+                           engine='python', error_bad_lines=False)
+    except IOError as e:
+        print("> Error trying to read csv file: ", file)
+        print("> Error: ", e)
+        sys.exit(1)
+
+    filename = re.sub('\(([0-9]\)).csv', '', file).split('/')
+    filename = filename[len(filename)-1].split('.')[0].lower()
+    print("> Creating table: ", filename)
+    print("> file: ", file)
+    time.sleep(10)
     table = filename.replace('(', '_').replace(' ', '').replace(')', '')
     columns = []
     columns2 = []
@@ -212,35 +243,27 @@ def read_csv(file, sep):
         columns2.append(str(d).replace(' ', '_').lower())
 
     try:
+        cursor = connection.cursor()
+        cursor.execute("DROP TABLE IF EXISTS " + table)
         sql = """CREATE TABLE  """ + table + \
               " (" + " nvarchar(max),".join(columns2) + " nvarchar(max))"
-
         print("Creating table: " + table)
-
         cursor.execute(sql)
-
         table_created = True
     except Exception as error:
         print(error)
 
     if table_created:
         print("Creating rows...")
-
         wildcards = list(map(str.lower, itertools.repeat('?', len(columns))))
-
         print("Inserting data into " + table)
-
         sql_into = "INSERT INTO " + table + \
             "(" + ','.join(columns2) + ") VALUES (" + ','.join(wildcards) + ")"
-
         rows = []
-
-        for row in pd.read_csv(file, sep, encoding="ISO-8859-1", error_bad_lines=False,
+        for row in pd.read_csv(file,  delimiter="|", encoding="utf-8", error_bad_lines=False,
                                usecols=columns, low_memory=False).itertuples():
-
             data_row = []
             for column in columns:
-
                 if table == 'sedes':
                     if column == 'Municipio PDET':
                         column = '_42'
@@ -248,33 +271,25 @@ def read_csv(file, sep):
                         column = '_43'
                     elif column == 'Municipio ZOMAC':
                         column = '_44'
-
                 data_insert = str(getattr(row, column))
-
                 data_row.append(data_insert)
             rows.append(data_row)
-
         print("Please, wait inserting files...")
-
         cursor.executemany(sql_into, rows)
-
         print("Files inserted!")
-
     connection.commit()
 
 
+# remove_files remove the files from the download directory
 def remove_files():
-    files = get_files_folder()
+    files = get_files()
     print("Removing files...", files)
     if len(files):
         for file in files:
             os.remove(file)
 
-# initialize the program with the environment variables (production or development)
 
 # initialize set of environment variables (production or development)
-
-
 def initialize():
     # cli arguments
     parser = argparse.ArgumentParser(description='Automate scraper tool:')
@@ -300,8 +315,30 @@ def initialize():
     return True
 
 
+# main function to run the scraper
+def main():
+    print("Steep 2: Get DB connection...")
+    connection, err = get_connection_db()
+    if err is not None:
+        print("> Error connecting to database: ", err)
+        sys.exit(1)
+    print("Steep 3: Get driver...")
+    # driver = get_driver()
+    print("Steep 4: Login...")
+    # driver = init_login(driver)
+    print("Steep 5: Get csv files...")
+    # download_files(driver)
+    print("Steep 6: Finish spider job ...")
+    # driver.quit()
+    print("Steep 7: Read cvs files...")
+    search_files(connection)
+    print(">> Program finished successfully")
+
+
 # principal function to run the program
 if __name__ == "__main__":
+    # remove the previous files in the download directory
+    # remove_files()
     # check if the environment variables are set
     if initialize() == False:
         print(">> Step 1: Error initializing the environment")
