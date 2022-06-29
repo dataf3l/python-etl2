@@ -44,9 +44,11 @@ def get_connection_db():
     DATABASE = os.environ.get('DATABASE')
     USER_NAME = os.environ.get('USER_NAME')
     PASSWORD = os.environ.get('PASSWORD')
+    DOWNLOAD_DIRECTORY = os.environ.get('DOWNLOAD_DIRECTORY')
     print(" * DATABASE: ", DATABASE)
     print(" * USERNAME: ", USER_NAME)
     print(" * PASSWORD: ", PASSWORD)
+    print(" * DOWNLOAD_DIRECTORY: ", DOWNLOAD_DIRECTORY)
 
     cdn = 'DRIVER='+SERVER_DRIVER + ';SERVER=' + SERVER_NAME+';DATABASE=' + \
         DATABASE + ';SSPI=yes' + ';UID='+USER_NAME+';PWD=' + PASSWORD
@@ -160,7 +162,7 @@ def download_files(driver):
             # wait for the file to be downloaded
             while os.path.exists(get_download_directory() + "/" + web['file_name']) == False:
                 number_of_attemps = number_of_attemps + 1
-                print(">> Waiting for file to be downloaded: " +
+                print(">> Waiting for file to be downloaded: " +  get_download_directory() + "/" + 
                       web['file_name'])
                 time.sleep(15)
                 if number_of_attemps == maximum_attempts:
@@ -245,7 +247,7 @@ def read_csv(file, connection):
         print("> Error trying to read csv file: ", file)
         print("> Error: ", e)
         sys.exit(1)
-
+    file = file.replace('\\','/')
     filename = re.sub('\(([2-9]\)).csv', '', file).split('/')
     filename = filename[len(filename)-1].split('.')[0].lower()
     print("> Creating table: ", filename)
