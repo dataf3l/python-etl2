@@ -24,7 +24,7 @@ from csv import reader
 
 
 def get_download_directory():
-    return str(os.environ.get('DOWNLOAD_DIRECTORY'))
+    return str(Path.home() / "Downloads")
 
 
 # get_connection_db return a connection pointer to the database and a error string
@@ -44,9 +44,11 @@ def get_connection_db():
     DATABASE = os.environ.get('DATABASE')
     USER_NAME = os.environ.get('USER_NAME')
     PASSWORD = os.environ.get('PASSWORD')
+    DOWNLOAD_DIRECTORY = os.environ.get('DOWNLOAD_DIRECTORY')
     print(" * DATABASE: ", DATABASE)
     print(" * USERNAME: ", USER_NAME)
     print(" * PASSWORD: ", PASSWORD)
+    print(" * DOWNLOAD_DIRECTORY: ", DOWNLOAD_DIRECTORY)
 
     cdn = 'DRIVER='+SERVER_DRIVER + ';SERVER=' + SERVER_NAME+';DATABASE=' + \
         DATABASE + ';SSPI=yes' + ';UID='+USER_NAME+';PWD=' + PASSWORD
@@ -115,43 +117,96 @@ def get_driver():
     return browser
 
 
-# download_files download the files from the url
-def download_files(driver):
-    # webs have the URL target to download the files
-    url_webs = [
-        {
-            "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/habilitados_reps.aspx?pageTitle"
-                    "=Registro%20Actual&pageHlp=",
-            "seconds": 5,
-            "file_name": "Prestadores.csv"
-        },
-        {
-            "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sedes_reps.aspx",
-            "seconds": 5,
-            "file_name": "Sedes.csv"
-        },
-        {
-            "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/serviciossedes_reps.aspx",
-            "seconds": 5,
-            "file_name": "Servicios.csv"
-        },
-        {
-            "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/capacidadesinstaladas_reps.aspx",
-            "seconds": 5,
-            "file_name": "CapacidadInstalada.csv"
-        },
-        {
-            "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/medidasseguridad_reps.aspx",
-            "seconds": 5,
-            "file_name": "MedidasSeguridad.csv"
-        },
-        {
-            "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sanciones_reps.aspx",
-            "seconds": 5,
-            "file_name": "MedidasSeguridad (1).csv"
-        },
-    ]
+def get_url_webs(files_to_download):
+    if files_to_download == 'all':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/habilitados_reps.aspx?pageTitle"
+                "=Registro%20Actual&pageHlp=",
+                "seconds": 5,
+                "file_name": "Prestadores.csv"
+            },
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sedes_reps.aspx",
+                "seconds": 5,
+                "file_name": "Sedes.csv"
+            },
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/serviciossedes_reps.aspx",
+                "seconds": 5,
+                "file_name": "Servicios.csv"
+            },
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/capacidadesinstaladas_reps.aspx",
+                "seconds": 5,
+                "file_name": "CapacidadInstalada.csv"
+            },
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/medidasseguridad_reps.aspx",
+                "seconds": 5,
+                "file_name": "MedidasSeguridad.csv"
+            },
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sanciones_reps.aspx",
+                "seconds": 5,
+                "file_name": "MedidasSeguridad (1).csv"
+            },
+        ]
+    if files_to_download == 'prestadores':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/habilitados_reps.aspx?pageTitle"
+                "=Registro%20Actual&pageHlp=",
+                "seconds": 5,
+                "file_name": "Prestadores.csv"
+            },
+        ]
+    if files_to_download == 'sedes':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sedes_reps.aspx",
+                "seconds": 5,
+                "file_name": "Sedes.csv"
+            },
+        ]
+    if files_to_download == 'servicios':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/serviciossedes_reps.aspx",
+                "seconds": 5,
+                "file_name": "Servicios.csv"
+            },
+        ]
+    if files_to_download == 'capacidad':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/capacidadesinstaladas_reps.aspx",
+                "seconds": 5,
+                "file_name": "CapacidadInstalada.csv"
+            },
+        ]
+    if files_to_download == 'seguridad':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/medidasseguridad_reps.aspx",
+                "seconds": 5,
+                "file_name": "MedidasSeguridad.csv"
+            },
+        ]
+    if files_to_download == 'sanciones':
+        return [
+            {
+                "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sanciones_reps.aspx",
+                "seconds": 5,
+                "file_name": "MedidasSeguridad (1).csv"
+            },
+        ]
 
+
+# download_files download the files from the url
+def download_files(driver, files_to_download):
+    # url_webs have the URL target to download the files
+    url_webs = get_url_webs(files_to_download)
     for web in url_webs:
         print("> Downloading: ", web["file_name"])
         if get_csv(driver, web['link']):
@@ -160,7 +215,7 @@ def download_files(driver):
             # wait for the file to be downloaded
             while os.path.exists(get_download_directory() + "/" + web['file_name']) == False:
                 number_of_attemps = number_of_attemps + 1
-                print(">> Waiting for file to be downloaded: " +
+                print(">> Waiting for file to be downloaded: " + get_download_directory() + "/" +
                       web['file_name'])
                 time.sleep(15)
                 if number_of_attemps == maximum_attempts:
@@ -245,7 +300,7 @@ def read_csv(file, connection):
         print("> Error trying to read csv file: ", file)
         print("> Error: ", e)
         sys.exit(1)
-
+    file = file.replace('\\', '/')
     filename = re.sub('\(([2-9]\)).csv', '', file).split('/')
     filename = filename[len(filename)-1].split('.')[0].lower()
     print("> Creating table: ", filename)
@@ -317,28 +372,33 @@ def initialize():
     parser = argparse.ArgumentParser(description='Automate scraper tool:')
     parser.add_argument('--mode', type=str, default='prod', choices=['prod', 'dev'],
                         help='production or development mode (default: production)')
+    parser.add_argument('-f', type=str, default='all', choices=['all', 'prestadores',
+                        'sedes', 'servicios', 'capacidad', 'seguridad', 'sanciones'],
+                        help='specifically select which file you want to download (default: all)')
     # parse arguments
     args = parser.parse_args()
     mode = args.mode.lower()
+    files_to_download = args.f.lower()
     print("Step 1: Initialize environment...")
     print("> Running in mode: " + mode)
+    print("> Files selected: " + files_to_download)
     # select the .env file from the environment mode
     environment = Path('./config/env') / mode / '.env'
     # check if the environment file exists
     if not environment.exists():
         print("> Environment file not found: " + str(environment))
-        return False
+        return False, files_to_download
     # load the .env file
     load_dotenv(dotenv_path=environment)
     # check if the environment variables are set
     if (os.environ.get('SERVER_DRIVER') == ""):
         print("> Error loading .env file")
-        return False
-    return True
+        return False, files_to_download
+    return True, files_to_download
 
 
 # main function to run the scraper
-def main():
+def main(files_to_download):
     print("Steep 2: Get DB connection...")
     connection, err = get_connection_db()
     if err is not None:
@@ -349,7 +409,7 @@ def main():
     print("Steep 4: Login...")
     driver = init_login(driver)
     print("Steep 5: Get csv files...")
-    download_files(driver)
+    download_files(driver, files_to_download)
     print("Steep 6: Finish spider job ...")
     driver.quit()
     print("Steep 7: Read cvs files...")
@@ -362,8 +422,9 @@ if __name__ == "__main__":
     # remove the previous files in the download directory
     remove_files()
     # check if the environment variables are set
-    if initialize() == False:
+    success, files_to_download = initialize()
+    if success == False:
         print(">> Step 1: Error initializing the environment")
         exit(1)  # exit with error
     # start the program
-    main()
+    main(files_to_download)
