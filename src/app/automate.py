@@ -20,9 +20,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 from csv import reader
 
+
 # set download directory
-
-
 def get_download_directory():
     return str(Path.home() / "Downloads")
 
@@ -31,6 +30,7 @@ def get_download_directory():
 def get_odbc_driver_name():
     odbc_driver_name = '{'+sorted(pyodbc.drivers()).pop()+'}'
     return odbc_driver_name
+
 
 # get_connection_db return a connection pointer to the database and a error string
 def get_connection_db():
@@ -114,6 +114,7 @@ def get_driver():
     return browser
 
 
+# get_url_webs return the url of the website and the file name to download
 def get_url_webs(files_to_download):
     if files_to_download == 'all':
         return [
@@ -121,32 +122,38 @@ def get_url_webs(files_to_download):
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/habilitados_reps.aspx?pageTitle"
                 "=Registro%20Actual&pageHlp=",
                 "seconds": 5,
-                "file_name": "Prestadores.csv"
+                "file_name": "Prestadores.csv",
+                "table_name": "prestadores"
             },
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sedes_reps.aspx",
                 "seconds": 5,
-                "file_name": "Sedes.csv"
+                "file_name": "Sedes.csv",
+                "table_name": "sedes"
             },
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/serviciossedes_reps.aspx",
                 "seconds": 5,
-                "file_name": "Servicios.csv"
+                "file_name": "Servicios.csv",
+                "table_name": "servicios"
             },
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/capacidadesinstaladas_reps.aspx",
                 "seconds": 5,
-                "file_name": "CapacidadInstalada.csv"
+                "file_name": "CapacidadInstalada.csv",
+                "table_name": "capacidad_instalada"
             },
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/medidasseguridad_reps.aspx",
                 "seconds": 5,
-                "file_name": "MedidasSeguridad.csv"
+                "file_name": "MedidasSeguridad.csv",
+                "table_name": "medidas_seguridad"
             },
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sanciones_reps.aspx",
                 "seconds": 5,
-                "file_name": "MedidasSeguridad (1).csv"
+                "file_name": "MedidasSeguridad (1).csv",
+                "table_name": "sanciones"
             },
         ]
     if files_to_download == 'prestadores':
@@ -155,7 +162,8 @@ def get_url_webs(files_to_download):
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/habilitados_reps.aspx?pageTitle"
                 "=Registro%20Actual&pageHlp=",
                 "seconds": 5,
-                "file_name": "Prestadores.csv"
+                "file_name": "Prestadores.csv",
+                "table_name": "prestadores"
             },
         ]
     if files_to_download == 'sedes':
@@ -163,7 +171,8 @@ def get_url_webs(files_to_download):
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sedes_reps.aspx",
                 "seconds": 5,
-                "file_name": "Sedes.csv"
+                "file_name": "Sedes.csv",
+                "table_name": "sedes"
             },
         ]
     if files_to_download == 'servicios':
@@ -171,7 +180,8 @@ def get_url_webs(files_to_download):
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/serviciossedes_reps.aspx",
                 "seconds": 5,
-                "file_name": "Servicios.csv"
+                "file_name": "Servicios.csv",
+                "table_name": "servicios"
             },
         ]
     if files_to_download == 'capacidad':
@@ -179,7 +189,8 @@ def get_url_webs(files_to_download):
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/capacidadesinstaladas_reps.aspx",
                 "seconds": 5,
-                "file_name": "CapacidadInstalada.csv"
+                "file_name": "CapacidadInstalada.csv",
+                "table_name": "capacidad_instalada"
             },
         ]
     if files_to_download == 'seguridad':
@@ -187,7 +198,8 @@ def get_url_webs(files_to_download):
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/medidasseguridad_reps.aspx",
                 "seconds": 5,
-                "file_name": "MedidasSeguridad.csv"
+                "file_name": "MedidasSeguridad.csv",
+                "table_name": "medidas_seguridad"
             },
         ]
     if files_to_download == 'sanciones':
@@ -195,15 +207,14 @@ def get_url_webs(files_to_download):
             {
                 "link": "https://prestadores.minsalud.gov.co/habilitacion/consultas/sanciones_reps.aspx",
                 "seconds": 5,
-                "file_name": "MedidasSeguridad (1).csv"
+                "file_name": "MedidasSeguridad.csv",
+                "table_name": "sanciones"
             },
         ]
 
 
 # download_files download the files from the url
-def download_files(driver, files_to_download):
-    # url_webs have the URL target to download the files
-    url_webs = get_url_webs(files_to_download)
+def download_files(driver, url_webs):
     for web in url_webs:
         print("> Downloading: ", web["file_name"])
         if get_csv(driver, web['link']):
@@ -243,16 +254,14 @@ def get_csv(driver, report_url):
         print("> get_csv: Error trying to get the CSV: ", e)
         return False
 
+
 # get_files return all files in the download directory
-
-
 def get_files():
     return glob.glob(get_download_directory()+"/"+"*.csv")
 
+
 # check_separator_character fix issues with the separator character in the csv files
 # Note: for any reason the separator character is not the same in the csv files
-
-
 def check_separator_character(files):
     # reemplace character (;) for (|) if exists
     for file in files:
@@ -273,7 +282,7 @@ def check_separator_character(files):
 
 
 # process_files process the files and save them in the database
-def process_files(connection):
+def process_files(connection, url_webs):
     # search for the files in the download directory
     files = get_files()
     if check_separator_character(files):
@@ -281,29 +290,23 @@ def process_files(connection):
     else:
         print(">> Separator character failed")
         sys.exit(1, "Error trying to check separator character")
-    if len(files) > 0:
-        for file in files:
+    if len(files) == len(url_webs):
+        for file in url_webs:
             read_csv(file, connection)
 
+
 # read_csv read the csv file and insert the data into the database
-
-
 def read_csv(file, connection):
+    path_to_file = get_download_directory() + "/" + file['file_name']
     # read the with pandas and get the DataFrame
     try:
-        data = pd.read_csv(file, delimiter="|", encoding="latin-1",
+        data = pd.read_csv(path_to_file, delimiter="|", encoding="latin-1",
                            engine='python', error_bad_lines=False)
     except IOError as e:
-        print("> Error trying to read csv file: ", file)
+        print("> Error trying to read csv file: ", path_to_file)
         print("> Error: ", e)
         sys.exit(1)
-    file = file.replace('\\', '/')
-    filename = re.sub('\(([2-9]\)).csv', '', file).split('/')
-    filename = filename[len(filename)-1].split('.')[0].lower()
-    print("> Creating table: ", filename)
-    print("> file: ", file)
-    time.sleep(10)
-    table = filename.replace('(', '_').replace(' ', '').replace(')', '')
+    print("> Creating {0} table... ".format(file['table_name']))
     columns = []
     columns2 = []
     for d in data:
@@ -311,28 +314,26 @@ def read_csv(file, connection):
         columns2.append(str(d).replace(' ', '_').lower())
     try:
         cursor = connection.cursor()
-        # cursor.execute("DROP TABLE IF EXISTS " + table)
-        sql = """CREATE TABLE  """ + table + \
+        cursor.execute("DROP TABLE IF EXISTS " + file['table_name'])
+        sql = """CREATE TABLE  """ + file['table_name'] + \
               " (" + " nvarchar(max),".join(columns2) + " nvarchar(max))"
-        print("Creating table: " + table)
         cursor.execute(sql)
         table_created = True
     except Exception as error:
         table_created = False
         print("> Error trying to create table: ", error)
-        return
 
     if table_created:
-        print("Creating rows...")
+        print("> Creating rows...")
         wildcards = list(map(str.lower, itertools.repeat('?', len(columns))))
-        print("Inserting data into " + table)
-        sql_into = "INSERT INTO " + table + \
+        print("> Inserting data into {0} table".format(file['table_name']))
+        sql_into = "INSERT INTO " + file['table_name'] + \
             "(" + ','.join(columns2) + ") VALUES (" + ','.join(wildcards) + ")"
         rows = []
         for row in data.itertuples():
             data_row = []
             for column in columns:
-                if table == 'sedes':
+                if file['table_name'] == 'sedes':
                     if column == 'Municipio PDET':
                         column = '_42'
                     elif column == 'Municipio PNSR':
@@ -344,13 +345,15 @@ def read_csv(file, connection):
             rows.append(data_row)
         # delete DataFrame to free memory
         del data
-        print("> Please, wait inserting files...")
+        print("> Please, wait inserting records...")
         try:
             cursor.executemany(sql_into, rows)
             connection.commit()
-            print("> Files inserted")
-        except Exception as error:
-            print("> Error trying to insert data: ", error)
+            print(
+                "> Records successfully inserted into table ", file['table_name'])
+        except Exception as err:
+            print("> Error trying to insert data  into table {0} error: {1}".format(
+                file['table_name'], err))
             return
 
 
@@ -385,29 +388,31 @@ def initialize():
     # check if the environment file exists
     if not environment.exists():
         print("> Environment file not found: " + str(environment))
-        return False, files_to_download
+        return files_to_download, False
     # load the .env file
     load_dotenv(dotenv_path=environment)
-    return True, files_to_download
+    return files_to_download,  True
 
 
 # main function to run the scraper
 def main(files_to_download):
-    print("Steep 2: Get DB connection...")
+    print("Step 2: Get DB connection...")
     connection, err = get_connection_db()
     if err is not None:
         print("> Error connecting to database: ", err)
         sys.exit(1)
-    print("Steep 3: Get driver...")
+    print("Step 3: Get SELENIUM driver...")
     driver = get_driver()
-    print("Steep 4: Login...")
+    print("Step 4: Login in website...")
     driver = init_login(driver)
-    print("Steep 5: Get csv files...")
-    download_files(driver, files_to_download)
-    print("Steep 6: Finish spider job ...")
+    print("Step 5: Get csv files...")
+    # url_webs have the url of the files to download
+    url_webs = get_url_webs(files_to_download)
+    download_files(driver, url_webs)
+    print("Step 6: Finish spider job ...")
     driver.quit()
-    print("Steep 7: Read cvs files...")
-    process_files(connection)
+    print("Step 7: Read cvs files...")
+    process_files(connection, url_webs)
     print(">> Program finished successfully")
 
 
@@ -416,7 +421,7 @@ if __name__ == "__main__":
     # remove the previous files in the download directory
     remove_files()
     # check if the environment variables are set
-    success, files_to_download = initialize()
+    files_to_download, success = initialize()
     if success == False:
         print(">> Step 1: Error initializing the environment")
         exit(1)  # exit with error
