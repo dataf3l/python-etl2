@@ -30,13 +30,12 @@ Set the environment variables according to the execution environment (prod/dev) 
 
  **Variable list:**
 
-| Argument      | File name                                                             | Example               |
-| ------------- | --------------------------------------------------------------------- | --------------------- |
-| SERVER_DRIVER | Name of the ODBC driver used by the computer to connect to SQL Server | '{SQL Server}'        |
-| SERVER_NAME   | The database server name                                              | 'server_name'         |
-| DATABASE      | The data base name                                                    | 'database_name'       |
-| USER_NAME     | username with permission to access the database                       | 'user_name'           |
-| PASSWORD      | User password                                                         | 'supersecretpassword' |
+| Argument    | File name                                       | Example               |
+| ----------- | ----------------------------------------------- | --------------------- |
+| SERVER_NAME | The database server name                        | 'server_name'         |
+| DATABASE    | The data base name                              | 'database_name'       |
+| USER_NAME   | username with permission to access the database | 'user_name'           |
+| PASSWORD    | User password                                   | 'supersecretpassword' |
 
 #### Windows
 
@@ -109,6 +108,7 @@ python3 src/app/automate.py -f prestadores
 #### Arguments list
 
  **Flat:**  -f
+Default value: all
 
 | Argument    | File name                  |
 | ----------- | -------------------------- |
@@ -118,13 +118,28 @@ python3 src/app/automate.py -f prestadores
 | capacidad   | CapacidadInstalada.csv     |
 | seguridad   | MedidasSeguridad.csv       |
 | sanciones   | MedidasSeguridad (1).csv * |
+| all         | all files                  |
 
- **Flat:**  --mode
+**Flat:**  --mode
+Default value: prod
 
 | Argument | Description            |
 | -------- | ---------------------- |
 | prod     | run in production mode |
 | dev      | run in developer mode  |
+
+
+Examples (Linux):
+
+```sh
+./run.sh --mode dev -f sanciones
+```
+
+Examples (Windows):
+
+```sh
+.\run.bat --mode dev -f sanciones
+```
 
 #### Building for source
 
