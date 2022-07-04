@@ -27,27 +27,24 @@ def get_download_directory():
     return str(Path.home() / "Downloads")
 
 
+# get_ODBC_driver_name return the odbc driver name installed in the system
+def get_odbc_driver_name():
+    odbc_driver_name = '{'+sorted(pyodbc.drivers()).pop()+'}'
+    return odbc_driver_name
+
 # get_connection_db return a connection pointer to the database and a error string
 def get_connection_db():
-    # detect platform and create connection string
-    if platform.system() == 'Windows':
-        print("> System is Windows")
-        SERVER_DRIVER = os.environ.get('SERVER_DRIVER')
-        SERVER_NAME = os.environ.get('SERVER_NAME')
-    elif platform.system() == 'Linux':
-        print("> System is Linux:")
-        SERVER_DRIVER = os.environ.get('SERVER_DRIVER')
-        SERVER_NAME = os.environ.get('SERVER_NAME')
-        print(" * SERVER_DRIVER: ", SERVER_DRIVER)
-        print(" * SERVER_NAME: ", SERVER_NAME)
-
+    # set the connection string
+    SERVER_NAME = os.environ.get('SERVER_NAME')
+    SERVER_DRIVER = get_odbc_driver_name()
     DATABASE = os.environ.get('DATABASE')
     USER_NAME = os.environ.get('USER_NAME')
     PASSWORD = os.environ.get('PASSWORD')
-    DOWNLOAD_DIRECTORY = os.environ.get('DOWNLOAD_DIRECTORY')
+    DOWNLOAD_DIRECTORY = get_download_directory()
+    print(" * SERVER_NAME: ", SERVER_NAME)
+    print(" * SERVER_DRIVER: ", SERVER_DRIVER)
     print(" * DATABASE: ", DATABASE)
     print(" * USERNAME: ", USER_NAME)
-    print(" * PASSWORD: ", PASSWORD)
     print(" * DOWNLOAD_DIRECTORY: ", DOWNLOAD_DIRECTORY)
 
     cdn = 'DRIVER='+SERVER_DRIVER + ';SERVER=' + SERVER_NAME+';DATABASE=' + \
@@ -379,10 +376,11 @@ def initialize():
     args = parser.parse_args()
     mode = args.mode.lower()
     files_to_download = args.f.lower()
+    # display process progress information to the user
     print("Step 1: Initialize environment...")
     print("> Running in mode: " + mode)
     print("> Files selected: " + files_to_download)
-    # select the .env file from the environment mode
+    # select the .env file from the environment mode (prod/dev)
     environment = Path('./config/env') / mode / '.env'
     # check if the environment file exists
     if not environment.exists():
@@ -390,10 +388,6 @@ def initialize():
         return False, files_to_download
     # load the .env file
     load_dotenv(dotenv_path=environment)
-    # check if the environment variables are set
-    if (os.environ.get('SERVER_DRIVER') == ""):
-        print("> Error loading .env file")
-        return False, files_to_download
     return True, files_to_download
 
 
